@@ -39,7 +39,19 @@ class Agent:
         self.error_1 = False    # no water intake
         self.error_2 = False    # no power intake
 
+    def raise_alarm(self, error_nr = int):
+        if error_nr < 0 or error_nr > 2:
+            print('No such error in existance.')
+            return
+        
+        if error_nr == 0:
+            self.error_0 = True
+            return
+        if error_nr == 1:
+            self.error_1 = True
+            return
 
+        self.error_2 = True
     # ==========================================================
     # DEVICE TWIN METHODS
 
@@ -49,8 +61,9 @@ class Agent:
         if desired_pressure < 0:
             self.pressure = 0
         
-        print("Pressure set to: " + str(self.pressure))
+        
         self.pressure = desired_pressure
+        print("Pressure set to: " + str(self.pressure))
 
     # Gets the pressure of water pump
     def get_pressure(self):

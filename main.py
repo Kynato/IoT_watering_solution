@@ -1,10 +1,10 @@
 INTERVAL = 5
 MSG_TXT = '{{"pressure": {pressure},"power_state": {power_state}}}'
+
 from agent import Agent
 agent = Agent()
 
 def main():
-    agent = Agent()
 
     # OBTAIN CONNECTION KEY
     if D1_KEY != None:
@@ -28,7 +28,7 @@ def main():
             if not agent.power_state:
                 pw_st = 0
 
-            press = agent.pressure
+            press = agent.get_pressure()
 
             # Build the message with simulated telemetry values.
             msg_txt_formatted = MSG_TXT.format(pressure=press, power_state=pw_st)
@@ -67,7 +67,7 @@ def main():
         print ( "IoTHubClient sample stopped" )
 
 def device_method_listener(device_client):
-    global INTERVAL
+    global agent
     while True:
         method_request = device_client.receive_method_request()
         print (
@@ -78,9 +78,34 @@ def device_method_listener(device_client):
         )
         if method_request.name == "set_pressure":
             try:
-                print(float(method_request.payload))
-                agent.set_pressure(method_request.payload)
+                agent.set_pressure(desired_pressure = float(method_request.payload))
 
+            except ValueError:
+                response_payload = {"Response": "Invalid parameter"}
+                response_status = 400
+            else:
+                response_payload = {"Response": "Executed direct method {}".format(method_request.name)}
+                response_status = 200
+        else:
+            response_payload = {"Response": "Direct method {} not defined".format(method_request.name)}
+            response_status = 404
+
+        if method_request.name == "pump_switch":
+            try:
+                agent.pump_switch()
+            except ValueError:
+                response_payload = {"Response": "Invalid parameter"}
+                response_status = 400
+            else:
+                response_payload = {"Response": "Executed direct method {}".format(method_request.name)}
+                response_status = 200
+        else:
+            response_payload = {"Response": "Direct method {} not defined".format(method_request.name)}
+            response_status = 404
+        
+        if method_request.name == "raise_error":
+            try:
+                agent.raise_alarm(error_nr = int((method_request.payload)))
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
                 response_status = 400
