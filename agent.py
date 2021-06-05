@@ -1,11 +1,11 @@
 class Agent:
-    
     # INITIALIZATION
     def __init__(self):
         # PROPETIES
         self.pressure = 100
         self.last_remembered_pressure = 0
         self.power_state = True
+        self.pressure_limit = 150
 
         # ERROR PRIMITIVES
         self.error_0 = False    # unidentified error
@@ -49,6 +49,7 @@ class Agent:
         if desired_pressure < 0:
             self.pressure = 0
         
+        print("Pressure set to: " + str(self.pressure))
         self.pressure = desired_pressure
 
     # Gets the pressure of water pump
@@ -62,6 +63,20 @@ class Agent:
             return True
         # Otherwise don't
         return False
+
+    # Returns codes of raised alarms
+    def get_alarm_codes(self):
+        codes = set()
+
+        if self.error_0:
+            codes.append(0)
+        if self.error_1:
+            codes.append(1)
+        if self.error_2:
+            codes.append(2)
+
+        return codes
+
 
     
     # REPORTING METHODS FOR DEVICE TWIN
