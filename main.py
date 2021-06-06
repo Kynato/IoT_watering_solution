@@ -5,8 +5,10 @@ from agent import Agent
 the_device = Agent()
 
 def main():
+    # Check for devices online
     DEVICES_ONLINE = propeties.get_instances()
     DEVICE_CONNECTION_STRING = DEVICE_KEYS[DEVICES_ONLINE]
+
     # OBTAIN CONNECTION KEY
     if DEVICE_CONNECTION_STRING != None:
         CONNECTION_STRING = DEVICE_CONNECTION_STRING
@@ -14,19 +16,24 @@ def main():
         print('Provide connection string in connection_strings.py file.')
         exit
 
-    # TRY TO CONNECT
+    # Connect, start threads and send messages
     try:
+        # Set up the connection to device
         client = iothub_client_init(CONNECTION_STRING)
-        propeties.add_instance()
+        
+        # Announce and increment devices online
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
+        propeties.add_instance()
 
+        # Start a thread to listen to DeviceTwin Desired updates
         twin_update_listener_thread = threading.Thread(target=twin_update_listener, args=(client,))
         twin_update_listener_thread.daemon = True
         twin_update_listener_thread.start()
 
+        # Send initial report in case something has changed
         twin_send_report(client)
 
-        # Start a thread to listen 
+        # Start a thread to listen to Direct Methods
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
         device_method_thread.daemon = True
         device_method_thread.start()
@@ -73,6 +80,7 @@ def main():
             # Sleep
             time.sleep(INTERVAL)
 
+    # Stop device and delete it from online
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
         propeties.delete_instance()
@@ -215,7 +223,6 @@ if __name__ == "__main__":
 
     from connection_strings import HUB_KEY, DEVICE_KEYS
     
-
     main()
 
 else:
