@@ -2,7 +2,7 @@ INTERVAL = 5
 MSG_TXT = '{{"pressure": {pressure},"power_state": {power_state}}}'
 
 from agent import Agent
-agent = Agent()
+the_device = Agent()
 
 def main():
 
@@ -29,12 +29,12 @@ def main():
         device_method_thread.start()
 
         while True:
-            # Get agent propeties
+            # Get the_device propeties
             pw_st = 1
-            if not agent.power_state:
+            if not the_device.power_state:
                 pw_st = 0
 
-            press = agent.get_pressure()
+            press = the_device.get_pressure()
 
             # Build the message with simulated telemetry values.
             msg_txt_formatted = MSG_TXT.format(pressure=press, power_state=pw_st)
@@ -42,20 +42,20 @@ def main():
 
             # Add a custom application property to the message.
             # An IoT hub can filter on these properties without access to the message body.
-            if press > agent.pressure_limit:
+            if press > the_device.pressure_limit:
                 message.custom_properties["pressure_limit_exceeded"] = True
             else:
                 message.custom_properties["pressure_limit_exceeded"] = False
 
-            if agent.error_0:
+            if the_device.error_0:
                 message.custom_properties["ERROR_0"] = True
             else:
                 message.custom_properties["ERROR_0"] = False
-            if agent.error_1:
+            if the_device.error_1:
                 message.custom_properties["ERROR_1"] = True
             else:
                 message.custom_properties["ERROR_1"] = False
-            if agent.error_2:
+            if the_device.error_2:
                 message.custom_properties["ERROR_2"] = True
             else:
                 message.custom_properties["ERROR_2"] = False
@@ -82,20 +82,20 @@ def twin_update_listener(client):
         print("Twin patch received:")
         print(patch)
         
-        agent.set_pressure(patch['pressure'])
-        agent.power_state = patch['power_state']
+        the_device.set_pressure(patch['pressure'])
+        the_device.power_state = patch['power_state']
     
 
 
 def twin_send_report(client):
     # Send reported 
     print ( "Sending data as reported property..." )
-    reported_patch = {"pressure": agent.get_pressure(), "power_state": agent.power_state}
+    reported_patch = {"pressure": the_device.get_pressure(), "power_state": the_device.power_state}
     client.patch_twin_reported_properties(reported_patch)
     print ( "Reported properties updated" )
 
 def device_method_listener(device_client):
-    global agent
+    global the_device
     while True:
         method_request = device_client.receive_method_request()
         print (
@@ -107,7 +107,7 @@ def device_method_listener(device_client):
         # SET_PRESSURE
         if method_request.name == "set_pressure":
             try:
-                agent.set_pressure(desired_pressure = float(method_request.payload))
+                the_device.set_pressure(desired_pressure = float(method_request.payload))
                 twin_send_report(device_client)
 
             except ValueError:
@@ -123,7 +123,7 @@ def device_method_listener(device_client):
         # PUMP_SWITCH
         if method_request.name == "pump_switch":
             try:
-                agent.pump_switch()
+                the_device.pump_switch()
                 twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
@@ -138,7 +138,7 @@ def device_method_listener(device_client):
         # RAISE_ERROR
         if method_request.name == "raise_error":
             try:
-                agent.raise_alarm(error_nr = int((method_request.payload)))
+                the_device.raise_alarm(error_nr = int((method_request.payload)))
                 twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
@@ -153,7 +153,7 @@ def device_method_listener(device_client):
         # ALARM_RESET
         if method_request.name == "alarm_reset":
             try:
-                agent.alarm_reset()
+                the_device.alarm_reset()
                 twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
