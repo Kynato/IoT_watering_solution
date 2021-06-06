@@ -1,5 +1,4 @@
 .vscode
-connection_strings.py
 KEYS.env
 
 # Byte-compiled / optimized / DLL files

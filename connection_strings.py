@@ -1,6 +1,6 @@
 # DEVICE 1
-D1_NAME = 'INSERT_DEVICE_NAME_HERE'
-D1_KEY = 'INSERT_YOUR_DEVICE_CONNECTION_STRING_HERE'
+D1_NAME = 'python_agent_0'
+D1_KEY = 'HostName=Watering-HUB.azure-devices.net;DeviceId=python_agent_0;SharedAccessKey=p1BUrqiU6LV+eKxhibREJn9E1t4K8/k/AjbTsRCYj3Y='
 
 # IOT_HUB
-HUB_KEY = 'INSERT_YOUR_IOT_HUB_CONNECTION_STRING_HERE'
+HUB_KEY = 'HostName=Watering-HUB.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=J1K0TCn45A79sIn5WIHBjX4aSGnZstOtJKZRDEvcL9s='

@@ -5,10 +5,11 @@ from agent import Agent
 the_device = Agent()
 
 def main():
-
+    DEVICES_ONLINE = propeties.get_instances()
+    DEVICE_CONNECTION_STRING = DEVICE_KEYS[DEVICES_ONLINE]
     # OBTAIN CONNECTION KEY
-    if D1_KEY != None:
-        CONNECTION_STRING = D1_KEY
+    if DEVICE_CONNECTION_STRING != None:
+        CONNECTION_STRING = DEVICE_CONNECTION_STRING
     else:
         print('Provide connection string in connection_strings.py file.')
         exit
@@ -16,6 +17,7 @@ def main():
     # TRY TO CONNECT
     try:
         client = iothub_client_init(CONNECTION_STRING)
+        propeties.add_instance()
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
 
         twin_update_listener_thread = threading.Thread(target=twin_update_listener, args=(client,))
@@ -29,12 +31,14 @@ def main():
         device_method_thread.daemon = True
         device_method_thread.start()
 
+        
+        # Message loop
         while True:
+
             # Get the_device propeties
             pw_st = 1
             if not the_device.power_state:
                 pw_st = 0
-
             press = the_device.get_pressure()
 
             # Build the message with simulated telemetry values.
@@ -71,11 +75,11 @@ def main():
 
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
+        propeties.delete_instance()
 
-# Device Twin Listener waiting for Desired propeties change
+# Device Twin Listener waiting for Desired propeties
 def twin_update_listener(client):
 
-    
     while True:
         patch = client.receive_twin_desired_properties_patch()  # blocking call
         print("Twin patch received:")
@@ -98,6 +102,7 @@ def twin_send_report(client):
     # Announce it
     print ( "Reported properties updated" )
 
+# Listens to Direct Method calls and processes tem
 def device_method_listener(device_client):
     global the_device
     while True:
@@ -172,10 +177,24 @@ def device_method_listener(device_client):
         method_response = MethodResponse(method_request.request_id, response_status, payload=response_payload)
         device_client.send_method_response(method_response)
 
+# Creates the connection to the device
 def iothub_client_init(CONNECTION_STRING):
     # Create an IoT Hub client
     client = IoTHubDeviceClient.create_from_connection_string(CONNECTION_STRING)
     return client
+
+# Get number of devices in the hub
+def get_amount_of_devices():
+    # Create connection to the hub
+    iot_hub_manager = IoTHubRegistryManager(HUB_KEY)
+    # Get list of the devices in the hub
+    list_of_devices = iot_hub_manager.get_devices()
+    # Count the devices on the list
+    amount_of_devices = len(list_of_devices)
+
+    # Print it on the screen and return
+    print('Number of devices in the hub: ' + str( amount_of_devices ) )
+    return amount_of_devices
 
 
 if __name__ == "__main__":
@@ -192,7 +211,9 @@ if __name__ == "__main__":
     import json
     import time
     import threading
-    from connection_strings import D1_KEY, D1_NAME, HUB_KEY
+    import propeties
+
+    from connection_strings import HUB_KEY, DEVICE_KEYS
     
 
     main()
