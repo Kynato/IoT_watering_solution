@@ -84,6 +84,7 @@ def main():
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
         propeties.delete_instance()
+        
 
 # Device Twin Listener waiting for Desired propeties
 def twin_update_listener(client):
@@ -205,6 +206,7 @@ def get_amount_of_devices():
     return amount_of_devices
 
 
+
 if __name__ == "__main__":
 
     # Announcement
@@ -212,6 +214,7 @@ if __name__ == "__main__":
 
     # Imports
     import asyncio
+    import atexit
     from azure.iot.device import IoTHubDeviceClient, Message, MethodResponse
     from azure.iot.hub import IoTHubRegistryManager
     from azure.iot.hub.models import Twin, TwinProperties, QuerySpecification, QueryResult
