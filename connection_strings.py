@@ -1,6 +1,7 @@
-# DEVICE 1
-D1_NAME = 'python_agent_0'
-D1_KEY = 'HostName=Watering-HUB.azure-devices.net;DeviceId=python_agent_0;SharedAccessKey=p1BUrqiU6LV+eKxhibREJn9E1t4K8/k/AjbTsRCYj3Y='
-
 # IOT_HUB
-HUB_KEY = 'HostName=Watering-HUB.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=J1K0TCn45A79sIn5WIHBjX4aSGnZstOtJKZRDEvcL9s='
+HUB_KEY = 'YOUR_HUB_CONNECTION_STRING_HERE'
+
+# DEVICE_KEYS
+DEVICE_KEYS = ['DEVICE_0_KEY', 
+'DEVICE_1_KEY', 
+'DEVICE_2_KEY']
