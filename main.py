@@ -11,6 +11,7 @@ def main():
         CONNECTION_STRING = D1_KEY
     else:
         print('Provide connection string in connection_strings.py file.')
+        exit
 
     # TRY TO CONNECT
     try:
@@ -64,34 +65,37 @@ def main():
             # Send the message.
             print( "Sending message: {}".format(message) )
             client.send_message(message)
-            print( "Message sent" )
 
             # Sleep
             time.sleep(INTERVAL)
 
     except KeyboardInterrupt:
-        print ( "IoTHubClient sample stopped" )
+        print ( "Agent instance - STOPPED..." )
 
+# Device Twin Listener waiting for Desired propeties change
 def twin_update_listener(client):
-    '''
-    Twin patch received:
-        {'power_level': 1223333, '$version': 7}
-    '''
+
+    
     while True:
         patch = client.receive_twin_desired_properties_patch()  # blocking call
         print("Twin patch received:")
         print(patch)
         
+        # patch is a dictionary type
         the_device.set_pressure(patch['pressure'])
         the_device.power_state = patch['power_state']
     
 
-
+# Sends data to Device Twin as Reported
 def twin_send_report(client):
-    # Send reported 
     print ( "Sending data as reported property..." )
+
+    # Prepare data to send
     reported_patch = {"pressure": the_device.get_pressure(), "power_state": the_device.power_state, "ERROR_0": the_device.error_0, "ERROR_1": the_device.error_1, "ERROR_2": the_device.error_2}
+    # Send the data
     client.patch_twin_reported_properties(reported_patch)
+
+    # Announce it
     print ( "Reported properties updated" )
 
 def device_method_listener(device_client):

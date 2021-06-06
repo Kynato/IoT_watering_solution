@@ -23,6 +23,7 @@ class Agent:
             self.last_remembered_pressure = self.pressure
             self.pressure = 0
             self.power_state = False
+            print('Power OFF.')
             return
         
         # Turning ON
@@ -30,6 +31,7 @@ class Agent:
             self.pressure = self.last_remembered_pressure
             self.last_remembered_pressure = -1
             self.power_state = True
+            print('Power ON.')
             return
 
 
@@ -38,6 +40,8 @@ class Agent:
         self.error_0 = False    # unidentified error
         self.error_1 = False    # no water intake
         self.error_2 = False    # no power intake
+
+        print('All errors are now reseted. Peace...')
 
     def raise_alarm(self, error_nr = int):
         if error_nr < 0 or error_nr > 2:
