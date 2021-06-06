@@ -43,10 +43,12 @@ class Agent:
 
         print('All errors are now reseted. Peace...')
 
-    def raise_alarm(self, error_nr = int):
+    def raise_error(self, error_nr = int):
         if error_nr < 0 or error_nr > 2:
             print('No such error in existance.')
             return
+
+        print('Raising ERROR_' + str(error_nr))
         
         if error_nr == 0:
             self.error_0 = True
@@ -94,7 +96,41 @@ class Agent:
 
         return codes
 
+    def get_error_0_to_int(self):
+        if self.error_0:
+            return 1
+        return 0
 
+    def get_error_1_to_int(self):
+        if self.error_1:
+            return 1
+        return 0
+
+    def get_error_2_to_int(self):
+        if self.error_2:
+            return 1
+        return 0
+
+    def get_errors_int(self):
+        errors = list()
+
+        if self.error_0:
+            errors.append(1)
+        else:
+            errors.append(0)
+
+        if self.error_1:
+            errors.append(1)
+        else:
+            errors.append(0)
+
+        if self.error_2:
+            errors.append(1)
+        else:
+            errors.append(0)
+
+        print('errors:' + str(errors))
+        return errors
     
     # REPORTING METHODS FOR DEVICE TWIN
 

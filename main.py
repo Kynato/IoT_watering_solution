@@ -1,5 +1,6 @@
 INTERVAL = 5
-MSG_TXT = '{{"pressure": {pressure},"power_state": {power_state}}}'
+MSG_TXT = '{{"pressure": {pressure}, "power_state": {power_state}}}'
+ERROR_TXT = '{{"ERROR_0": {ERROR_0}, "ERROR_1": {ERROR_1}, "ERROR_2": {ERROR_2}}}'
 
 from agent import Agent
 the_device = Agent()
@@ -52,26 +53,25 @@ def main():
             msg_txt_formatted = MSG_TXT.format(pressure=press, power_state=pw_st)
             message = Message(msg_txt_formatted)
 
+
+            if the_device.get_alarm_state():
+                errors = the_device.get_errors_int()
+                error_txt_formatted = ERROR_TXT.format(ERROR_0=int(errors[0]), ERROR_1=int(errors[1]), ERROR_2=int(errors[2]))
+                #err_0 = the_device.get_error_0_to_int()
+                #error_txt_formatted = ERROR_TXT.format(ERROR_0=1, ERROR_1=0, ERROR_2=1)
+                error_message = Message(error_txt_formatted)
+
+                # Send the message.
+                print( "Sending ERROR_MESSAGE: {}".format(error_message) )
+                client.send_message(error_message)
+
+
             # Add a custom application property to the message.
             # An IoT hub can filter on these properties without access to the message body.
             if press > the_device.pressure_limit:
                 message.custom_properties["pressure_limit_exceeded"] = True
             else:
                 message.custom_properties["pressure_limit_exceeded"] = False
-
-            if the_device.error_0:
-                message.custom_properties["ERROR_0"] = True
-            else:
-                message.custom_properties["ERROR_0"] = False
-            if the_device.error_1:
-                message.custom_properties["ERROR_1"] = True
-            else:
-                message.custom_properties["ERROR_1"] = False
-            if the_device.error_2:
-                message.custom_properties["ERROR_2"] = True
-            else:
-                message.custom_properties["ERROR_2"] = False
-
 
             # Send the message.
             print( "Sending message: {}".format(message) )
@@ -83,7 +83,6 @@ def main():
     # Stop device and delete it from online
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
-        propeties.delete_instance()
         
 
 # Device Twin Listener waiting for Desired propeties
@@ -156,7 +155,7 @@ def device_method_listener(device_client):
         # RAISE_ERROR
         if method_request.name == "raise_error":
             try:
-                the_device.raise_alarm(error_nr = int((method_request.payload)))
+                the_device.raise_error(error_nr = int((method_request.payload)))
                 twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
@@ -205,7 +204,10 @@ def get_amount_of_devices():
     print('Number of devices in the hub: ' + str( amount_of_devices ) )
     return amount_of_devices
 
-
+def decrement_online_devices(sig):
+    propeties.delete_instance()
+    print('Decrementing online devices')
+    time.sleep(1)
 
 if __name__ == "__main__":
 
@@ -223,9 +225,12 @@ if __name__ == "__main__":
     import time
     import threading
     import propeties
-
+    import win32api
     from connection_strings import HUB_KEY, DEVICE_KEYS
-    
+
+    win32api.SetConsoleCtrlHandler(decrement_online_devices, True)
+    atexit.register(decrement_online_devices)
+
     main()
 
 else:
