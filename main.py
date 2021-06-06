@@ -17,6 +17,12 @@ def main():
         client = iothub_client_init(CONNECTION_STRING)
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
 
+        twin_update_listener_thread = threading.Thread(target=twin_update_listener, args=(client,))
+        twin_update_listener_thread.daemon = True
+        twin_update_listener_thread.start()
+
+        
+
         # Start a thread to listen 
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
         device_method_thread.daemon = True
@@ -37,22 +43,22 @@ def main():
             # Add a custom application property to the message.
             # An IoT hub can filter on these properties without access to the message body.
             if press > agent.pressure_limit:
-                message.custom_properties["pressure_limit_exceeded"] = "true"
+                message.custom_properties["pressure_limit_exceeded"] = True
             else:
-                message.custom_properties["pressure_limit_exceeded"] = "false"
+                message.custom_properties["pressure_limit_exceeded"] = False
 
             if agent.error_0:
                 message.custom_properties["ERROR_0"] = True
             else:
                 message.custom_properties["ERROR_0"] = False
             if agent.error_1:
-                message.custom_properties["ERROR_1"] = "true"
+                message.custom_properties["ERROR_1"] = True
             else:
-                message.custom_properties["ERROR_1"] = "false"
+                message.custom_properties["ERROR_1"] = False
             if agent.error_2:
-                message.custom_properties["ERROR_2"] = "true"
+                message.custom_properties["ERROR_2"] = True
             else:
-                message.custom_properties["ERROR_2"] = "false"
+                message.custom_properties["ERROR_2"] = False
 
 
             # Send the message.
@@ -66,6 +72,28 @@ def main():
     except KeyboardInterrupt:
         print ( "IoTHubClient sample stopped" )
 
+def twin_update_listener(client):
+    '''
+    Twin patch received:
+        {'power_level': 1223333, '$version': 7}
+    '''
+    while True:
+        patch = client.receive_twin_desired_properties_patch()  # blocking call
+        print("Twin patch received:")
+        print(patch)
+        
+        agent.set_pressure(patch['pressure'])
+        agent.power_state = patch['power_state']
+    
+
+
+def twin_send_report(client):
+    # Send reported 
+    print ( "Sending data as reported property..." )
+    reported_patch = {"pressure": agent.get_pressure(), "power_state": agent.power_state}
+    client.patch_twin_reported_properties(reported_patch)
+    print ( "Reported properties updated" )
+
 def device_method_listener(device_client):
     global agent
     while True:
@@ -76,9 +104,11 @@ def device_method_listener(device_client):
                 payload=method_request.payload
             )
         )
+        # SET_PRESSURE
         if method_request.name == "set_pressure":
             try:
                 agent.set_pressure(desired_pressure = float(method_request.payload))
+                twin_send_report(device_client)
 
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
@@ -90,9 +120,11 @@ def device_method_listener(device_client):
             response_payload = {"Response": "Direct method {} not defined".format(method_request.name)}
             response_status = 404
 
+        # PUMP_SWITCH
         if method_request.name == "pump_switch":
             try:
                 agent.pump_switch()
+                twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
                 response_status = 400
@@ -103,9 +135,26 @@ def device_method_listener(device_client):
             response_payload = {"Response": "Direct method {} not defined".format(method_request.name)}
             response_status = 404
         
+        # RAISE_ERROR
         if method_request.name == "raise_error":
             try:
                 agent.raise_alarm(error_nr = int((method_request.payload)))
+                twin_send_report(device_client)
+            except ValueError:
+                response_payload = {"Response": "Invalid parameter"}
+                response_status = 400
+            else:
+                response_payload = {"Response": "Executed direct method {}".format(method_request.name)}
+                response_status = 200
+        else:
+            response_payload = {"Response": "Direct method {} not defined".format(method_request.name)}
+            response_status = 404
+
+        # ALARM_RESET
+        if method_request.name == "alarm_reset":
+            try:
+                agent.alarm_reset()
+                twin_send_report(device_client)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
                 response_status = 400
@@ -133,11 +182,13 @@ if __name__ == "__main__":
     # Imports
     import asyncio
     from azure.iot.device import IoTHubDeviceClient, Message, MethodResponse
+    from azure.iot.hub import IoTHubRegistryManager
+    from azure.iot.hub.models import Twin, TwinProperties, QuerySpecification, QueryResult
     import azure
     import json
     import time
     import threading
-    from connection_strings import D1_KEY
+    from connection_strings import D1_KEY, D1_NAME, HUB_KEY
     
 
     main()
