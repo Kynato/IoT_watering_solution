@@ -21,7 +21,7 @@ def main():
         twin_update_listener_thread.daemon = True
         twin_update_listener_thread.start()
 
-        
+        twin_send_report(client)
 
         # Start a thread to listen 
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
@@ -90,7 +90,7 @@ def twin_update_listener(client):
 def twin_send_report(client):
     # Send reported 
     print ( "Sending data as reported property..." )
-    reported_patch = {"pressure": the_device.get_pressure(), "power_state": the_device.power_state}
+    reported_patch = {"pressure": the_device.get_pressure(), "power_state": the_device.power_state, "ERROR_0": the_device.error_0, "ERROR_1": the_device.error_1, "ERROR_2": the_device.error_2}
     client.patch_twin_reported_properties(reported_patch)
     print ( "Reported properties updated" )
 
