@@ -1,4 +1,4 @@
-INTERVAL = 5
+INTERVAL = 10
 MSG_TXT = '{{"pressure": {pressure}, "power_state": {power_state}}}'
 ERROR_TXT = '{{"ERROR_0": {ERROR_0}, "ERROR_1": {ERROR_1}, "ERROR_2": {ERROR_2}}}'
 
@@ -52,6 +52,7 @@ def main():
             # Build the message with simulated telemetry values.
             msg_txt_formatted = MSG_TXT.format(pressure=press, power_state=pw_st)
             message = Message(msg_txt_formatted)
+            message.custom_properties['level'] = 'storage'
 
 
             if the_device.get_alarm_state():
@@ -60,18 +61,13 @@ def main():
                 #err_0 = the_device.get_error_0_to_int()
                 #error_txt_formatted = ERROR_TXT.format(ERROR_0=1, ERROR_1=0, ERROR_2=1)
                 error_message = Message(error_txt_formatted)
+                error_message.custom_properties['level'] = 'critical'
 
                 # Send the message.
                 print( "Sending ERROR_MESSAGE: {}".format(error_message) )
                 client.send_message(error_message)
 
 
-            # Add a custom application property to the message.
-            # An IoT hub can filter on these properties without access to the message body.
-            if press > the_device.pressure_limit:
-                message.custom_properties["pressure_limit_exceeded"] = True
-            else:
-                message.custom_properties["pressure_limit_exceeded"] = False
 
             # Send the message.
             print( "Sending message: {}".format(message) )
