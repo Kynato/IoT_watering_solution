@@ -92,6 +92,9 @@ def twin_update_listener(client):
         # patch is a dictionary type
         the_device.set_pressure(patch['pressure'])
         the_device.power_state = patch['power_state']
+        twin_send_report(client)
+
+    
     
 
 # Sends data to Device Twin as Reported
@@ -225,7 +228,6 @@ if __name__ == "__main__":
     from connection_strings import HUB_KEY, DEVICE_KEYS
 
     win32api.SetConsoleCtrlHandler(decrement_online_devices, True)
-    atexit.register(decrement_online_devices)
 
     main()
 

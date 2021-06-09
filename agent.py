@@ -1,3 +1,5 @@
+import random
+
 class Agent:
     # INITIALIZATION
     def __init__(self):
@@ -73,7 +75,7 @@ class Agent:
 
     # Gets the pressure of water pump
     def get_pressure(self):
-        return self.pressure
+        return self.pressure + random.gauss(0, 3)
 
     # Gets whether the alarm should be raised
     def get_alarm_state(self):
