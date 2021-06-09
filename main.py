@@ -1,6 +1,6 @@
 INTERVAL = 10
-MSG_TXT = '{{"pressure": {pressure}, "power_state": {power_state}}}'
-ERROR_TXT = '{{"ERROR_0": {ERROR_0}, "ERROR_1": {ERROR_1}, "ERROR_2": {ERROR_2}}}'
+MSG_TXT = '{{"device_id": {device_id}, "pressure": {pressure}, "power_state": {power_state}}}'
+ERROR_TXT = '{{"device_id": {device_id}, "ERROR_0": {ERROR_0}, "ERROR_1": {ERROR_1}, "ERROR_2": {ERROR_2}}}'
 
 from agent import Agent
 the_device = Agent()
@@ -13,6 +13,7 @@ def main():
     # OBTAIN CONNECTION KEY
     if DEVICE_CONNECTION_STRING != None:
         CONNECTION_STRING = DEVICE_CONNECTION_STRING
+        the_device.set_device_id(DEVICES_ONLINE)
     else:
         print('Provide connection string in connection_strings.py file.')
         exit
@@ -26,13 +27,15 @@ def main():
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
         propeties.add_instance()
 
+        # Send initial report in case something has changed
+        twin_send_report(client)
+
         # Start a thread to listen to DeviceTwin Desired updates
         twin_update_listener_thread = threading.Thread(target=twin_update_listener, args=(client,))
         twin_update_listener_thread.daemon = True
         twin_update_listener_thread.start()
 
-        # Send initial report in case something has changed
-        twin_send_report(client)
+        
 
         # Start a thread to listen to Direct Methods
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
@@ -50,14 +53,14 @@ def main():
             press = the_device.get_pressure()
 
             # Build the message with simulated telemetry values.
-            msg_txt_formatted = MSG_TXT.format(pressure=press, power_state=pw_st)
+            msg_txt_formatted = MSG_TXT.format(device_id = the_device.device_id,pressure=press, power_state=pw_st)
             message = Message(msg_txt_formatted)
             message.custom_properties['level'] = 'storage'
 
 
             if the_device.get_alarm_state():
                 errors = the_device.get_errors_int()
-                error_txt_formatted = ERROR_TXT.format(ERROR_0=int(errors[0]), ERROR_1=int(errors[1]), ERROR_2=int(errors[2]))
+                error_txt_formatted = ERROR_TXT.format(device_id = the_device.device_id, ERROR_0=int(errors[0]), ERROR_1=int(errors[1]), ERROR_2=int(errors[2]))
                 #err_0 = the_device.get_error_0_to_int()
                 #error_txt_formatted = ERROR_TXT.format(ERROR_0=1, ERROR_1=0, ERROR_2=1)
                 error_message = Message(error_txt_formatted)
@@ -90,8 +93,8 @@ def twin_update_listener(client):
         print(patch)
         
         # patch is a dictionary type
-        the_device.set_pressure(patch['pressure'])
-        the_device.power_state = patch['power_state']
+        the_device.set_pressure( float(patch['pressure']) )
+        #the_device.power_state = patch['power_state']
         twin_send_report(client)
 
     
@@ -102,7 +105,7 @@ def twin_send_report(client):
     print ( "Sending data as reported property..." )
 
     # Prepare data to send
-    reported_patch = {"pressure": the_device.get_pressure(), "power_state": the_device.power_state, "ERROR_0": the_device.error_0, "ERROR_1": the_device.error_1, "ERROR_2": the_device.error_2}
+    reported_patch = {"pressure": the_device.pressure, "power_state": the_device.power_state, "ERROR_0": the_device.error_0, "ERROR_1": the_device.error_1, "ERROR_2": the_device.error_2}
     # Send the data
     client.patch_twin_reported_properties(reported_patch)
 
@@ -214,13 +217,10 @@ if __name__ == "__main__":
     print('main.py - Running')
 
     # Imports
-    import asyncio
-    import atexit
     from azure.iot.device import IoTHubDeviceClient, Message, MethodResponse
     from azure.iot.hub import IoTHubRegistryManager
     from azure.iot.hub.models import Twin, TwinProperties, QuerySpecification, QueryResult
     import azure
-    import json
     import time
     import threading
     import propeties

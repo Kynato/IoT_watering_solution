@@ -4,6 +4,7 @@ class Agent:
     # INITIALIZATION
     def __init__(self):
         # PROPETIES
+        self.device_id = 0
         self.pressure = 100
         self.last_remembered_pressure = 0
         self.power_state = True
@@ -72,6 +73,9 @@ class Agent:
         
         self.pressure = desired_pressure
         print("Pressure set to: " + str(self.pressure))
+
+    def set_device_id(self, id:int):
+        self.device_id = id
 
     # Gets the pressure of water pump
     def get_pressure(self):
