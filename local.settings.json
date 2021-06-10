@@ -1,0 +1,8 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "WateringEventHub_RootManageSharedAccessKey_EVENTHUB": "Endpoint=sb://wateringeventhub.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=0w7huNZhjQTjynMvczxdzW12PD0NT8FfGlpSE+fFnGo=;EntityPath=thehub"
+  }
+}

@@ -2,6 +2,7 @@ INTERVAL = 10
 MSG_TXT = '{{"device_id": {device_id}, "pressure": {pressure}, "power_state": {power_state}}}'
 ERROR_TXT = '{{"device_id": {device_id}, "ERROR_0": {ERROR_0}, "ERROR_1": {ERROR_1}, "ERROR_2": {ERROR_2}}}'
 
+import logging
 from agent import Agent
 the_device = Agent()
 
@@ -22,6 +23,12 @@ def main():
     try:
         # Set up the connection to device
         client = iothub_client_init(CONNECTION_STRING)
+
+        
+
+        
+        loop = asyncio.get_event_loop()
+        
         
         # Announce and increment devices online
         print ( "IoT Hub device sending periodic messages, press Ctrl-C to exit" )
@@ -35,7 +42,6 @@ def main():
         twin_update_listener_thread.daemon = True
         twin_update_listener_thread.start()
 
-        
 
         # Start a thread to listen to Direct Methods
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
@@ -52,25 +58,21 @@ def main():
                 pw_st = 0
             press = the_device.get_pressure()
 
+            loop.run_until_complete(send_event())
             # Build the message with simulated telemetry values.
             msg_txt_formatted = MSG_TXT.format(device_id = the_device.device_id,pressure=press, power_state=pw_st)
             message = Message(msg_txt_formatted)
             message.custom_properties['level'] = 'storage'
 
-
             if the_device.get_alarm_state():
                 errors = the_device.get_errors_int()
                 error_txt_formatted = ERROR_TXT.format(device_id = the_device.device_id, ERROR_0=int(errors[0]), ERROR_1=int(errors[1]), ERROR_2=int(errors[2]))
-                #err_0 = the_device.get_error_0_to_int()
-                #error_txt_formatted = ERROR_TXT.format(ERROR_0=1, ERROR_1=0, ERROR_2=1)
                 error_message = Message(error_txt_formatted)
                 error_message.custom_properties['level'] = 'critical'
 
                 # Send the message.
                 print( "Sending ERROR_MESSAGE: {}".format(error_message) )
                 client.send_message(error_message)
-
-
 
             # Send the message.
             print( "Sending message: {}".format(message) )
@@ -83,6 +85,42 @@ def main():
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
         
+async def send_event():
+    # CHANGE BEFORE GIT PUSH
+    producer = EventHubProducerClient.from_connection_string(conn_str = EVENT_HUB_KEY, eventhub_name="thehub")
+
+    try:
+        event_data_batch = await producer.create_batch()
+        while True:
+            try:
+                event_data_batch.add(EventData('Message inside EventBatchData'))
+            except ValueError:
+                # The EventDataBatch object reaches its max_size.
+                # You can send the full EventDataBatch object and create a new one here.
+                break
+        await producer.send_batch(event_data_batch)
+    finally:
+        # Close down the producer handler.
+        print('Should be sent.')
+        await producer.close()
+
+'''
+    async with producer:
+        event_data_batch = await producer.create_batch()
+
+        while True:
+            try:
+                event_data_batch.add(EventData('ERROR RAISED'))
+            except ValueError:
+                print( 'Error sending the EVENT...')
+                break
+        
+        await producer.send_batch(event_data_batch)
+        producer.send_message
+
+        print('Event sent.')
+        print(event_data_batch.body_as_json())
+        await producer.close()'''
 
 # Device Twin Listener waiting for Desired propeties
 def twin_update_listener(client):
@@ -219,13 +257,16 @@ if __name__ == "__main__":
     # Imports
     from azure.iot.device import IoTHubDeviceClient, Message, MethodResponse
     from azure.iot.hub import IoTHubRegistryManager
+    from azure.eventhub.aio import EventHubProducerClient
+    from azure.eventhub import EventData
     from azure.iot.hub.models import Twin, TwinProperties, QuerySpecification, QueryResult
     import azure
+    import asyncio
     import time
     import threading
     import propeties
     import win32api
-    from connection_strings import HUB_KEY, DEVICE_KEYS
+    from connection_strings import HUB_KEY, DEVICE_KEYS, EVENT_HUB_KEY
 
     win32api.SetConsoleCtrlHandler(decrement_online_devices, True)
 

@@ -1,4 +1,4 @@
-.vscode
+
 KEYS.env
 
 # Byte-compiled / optimized / DLL files
@@ -131,3 +131,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 connection_strings.py
+
+.python_packages
