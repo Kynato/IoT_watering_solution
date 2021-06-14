@@ -89,6 +89,18 @@ class Agent:
         # Otherwise don't
         return False
 
+    # Gets whether the alarm should be raised in int
+    def get_alarm_state_int(self):
+        # If any of the errors was detected - raise the alarm
+        if self.error_0 is True or self.error_1 is True or self.error_2 is True:
+            return 1
+        # Otherwise don't
+        return 0
+    
+    def buisness_logic(self):
+        self.pressure = 0
+        self.state = 0
+
     # Returns codes of raised alarms
     def get_alarm_codes(self):
         codes = set()
