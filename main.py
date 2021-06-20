@@ -35,6 +35,7 @@ def main():
         # Send initial report in case something has changed
         twin_send_report(client)
 
+        # CREATE LISTENERS =================================================================
         # Start a thread to listen to DeviceTwin Desired updates
         twin_update_listener_thread = threading.Thread(target=twin_update_listener, args=(client,))
         twin_update_listener_thread.daemon = True
@@ -45,12 +46,11 @@ def main():
         message_listener_thread.daemon = True
         message_listener_thread.start()
 
-
         # Start a thread to listen to Direct Methods
         device_method_thread = threading.Thread(target=device_method_listener, args=(client,))
         device_method_thread.daemon = True
         device_method_thread.start()
-
+        # =================================================================================
         
         # Message loop
         while the_device.power_state == 1:
@@ -68,6 +68,8 @@ def main():
             message = Message(msg_txt_formatted)
             message.custom_properties['level'] = 'storage'
 
+            
+
             # Check for errors
             if the_device.get_alarm_state():
                 errors = the_device.get_errors_int()
@@ -78,10 +80,16 @@ def main():
                 # Send the message.
                 print( "Sending ERROR_MESSAGE: {}".format(error_message) )
                 client.send_message(error_message)
-                loop.run_until_complete(send_event())
-                the_device.buisness_logic()
-                decrement_online_devices(True)
-                break
+                #loop.run_until_complete(send_event(DEVICE_CONNECTION_STRING))
+
+                dev_name = 'python_agent_{id}'.format(id=the_device.device_id)
+                print(dev_name)
+                pload = {
+                            'ConnectionDeviceId': dev_name,
+                            'MethodName': 'pump_switch'
+                        }
+                url = 'https://csharpwatering.azurewebsites.net/api/HttpTriggerKox'
+                r = requests.post(url, json=pload)
 
 
 
@@ -97,14 +105,14 @@ def main():
     except KeyboardInterrupt:
         print ( "Agent instance - STOPPED..." )
         
-async def send_event():
-    # CHANGE BEFORE GIT PUSH
+async def send_event(DEVICE_CONNECTION_STRING):
     producer = EventHubProducerClient.from_connection_string(conn_str = EVENT_HUB_KEY, eventhub_name="thehub")
 
     try:
         event_data_batch = await producer.create_batch()
         new_event = EventData('ALARM RAISED')
-        new_event.properties['alarm'] = True
+        new_event.properties['device_id'] = the_device.device_id
+        new_event.properties['connection_string'] = DEVICE_CONNECTION_STRING
         print(new_event.properties)
         event_data_batch.add(new_event)
         await producer.send_batch(event_data_batch)
@@ -115,7 +123,7 @@ async def send_event():
 
 # Device Twin Listener waiting for Desired propeties
 def twin_update_listener(client):
-
+    print('Listening to Twin Updated Async')
     while True:
         patch = client.receive_twin_desired_properties_patch()  # blocking call
         print("Twin patch received:")
@@ -125,6 +133,7 @@ def twin_update_listener(client):
         the_device.set_pressure( float(patch['pressure']) )
         #the_device.power_state = patch['power_state']
         twin_send_report(client)
+        time.sleep(INTERVAL)
 
 def message_listener(client):
     global RECEIVED_MESSAGES
@@ -138,7 +147,8 @@ def message_listener(client):
             print ("    {0}".format(property))
 
         print( "Total calls received: {}".format(RECEIVED_MESSAGES))
-        print()   
+        print()
+        time.sleep(INTERVAL)  
     
 
 # Sends data to Device Twin as Reported
@@ -157,6 +167,7 @@ def twin_send_report(client):
 def device_method_listener(device_client):
     global the_device
     while True:
+        time.sleep(INTERVAL)
         method_request = device_client.receive_method_request()
         print (
             "\nMethod callback called with:\nmethodName = {method_name}\npayload = {payload}".format(
@@ -185,6 +196,7 @@ def device_method_listener(device_client):
             try:
                 the_device.pump_switch()
                 twin_send_report(device_client)
+                decrement_online_devices(True)
             except ValueError:
                 response_payload = {"Response": "Invalid parameter"}
                 response_status = 400
@@ -272,6 +284,9 @@ if __name__ == "__main__":
     import propeties
     import win32api
     from connection_strings import HUB_KEY, DEVICE_KEYS, EVENT_HUB_KEY
+
+    import requests
+    
 
     win32api.SetConsoleCtrlHandler(decrement_online_devices, True)
 

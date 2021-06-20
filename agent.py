@@ -79,7 +79,7 @@ class Agent:
 
     # Gets the pressure of water pump
     def get_pressure(self):
-        return self.pressure + random.gauss(0, 3)
+        return self.pressure + random.gauss(0, 10)
 
     # Gets whether the alarm should be raised
     def get_alarm_state(self):
@@ -98,6 +98,7 @@ class Agent:
         return 0
     
     def buisness_logic(self):
+        print('Alarm state noticed - ')
         self.pressure = 0
         self.state = 0
 
